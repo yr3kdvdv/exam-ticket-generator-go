@@ -14,7 +14,7 @@
 
 ### Windows без установки Go
 
-На странице [Actions](https://github.com/yr3kdvdv/exam-ticket-generator-go/actions) откройте успешную проверку ветки `lab2-ui-tickets` и скачайте артефакт `lab2-windows-amd64`. Распакуйте весь архив в одну папку и запустите двойным щелчком `ticket-generator-gui.exe`. Файлы `students.xlsx` и `tickets.docx` должны остаться рядом с `.exe`; готовый `results.xlsx` появится там же. На компьютере пользователя Go устанавливать не нужно.
+Скачайте [архив Лаб 2 для Windows x64](https://github.com/yr3kdvdv/exam-ticket-generator-go/releases/download/lab2-v1.0.0/lab2-windows-amd64.zip). Распакуйте его целиком в одну папку и запустите двойным щелчком `ticket-generator-gui.exe`. Файлы `students.xlsx` и `tickets.docx` должны остаться рядом с `.exe`; готовый `results.xlsx` появится там же. На компьютере пользователя Go устанавливать не нужно. Сборку можно также посмотреть на странице [Actions](https://github.com/yr3kdvdv/exam-ticket-generator-go/actions).
 
 Для разработки из исходников нужен Go 1.26+, C-компилятор и системные библиотеки Fyne. Из корня репозитория:
 
