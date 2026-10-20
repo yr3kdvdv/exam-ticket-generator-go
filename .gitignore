@@ -1,0 +1,4 @@
+journal.xlsx
+~$*.xlsx
+.journal-*.xlsx
+.DS_Store
