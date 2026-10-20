@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/rand"
 	"errors"
 	"flag"
@@ -9,12 +10,14 @@ import (
 	"io"
 	"math/big"
 	"os"
-	"os/exec"
 	"os/signal"
+	"runtime"
 	"strings"
 	"sync"
 	"syscall"
 	"unicode/utf8"
+
+	"golang.org/x/term"
 )
 
 const ticketCount = 20
@@ -31,6 +34,11 @@ func main() {
 		os.Exit(1)
 	}
 	defer console.close()
+	out := console.out
+	errOut := io.Writer(os.Stderr)
+	if console.raw && runtime.GOOS != "windows" {
+		errOut = crlfWriter{os.Stderr}
+	}
 
 	interrupts := make(chan os.Signal, 1)
 	signal.Notify(interrupts, os.Interrupt, syscall.SIGTERM)
@@ -41,31 +49,31 @@ func main() {
 		os.Exit(130)
 	}()
 
-	fmt.Fprintln(os.Stdout, "Предмет: Proiectarea Sistemelor Informaționale")
-	fmt.Fprintln(os.Stdout, "Для выхода нажмите ESC.")
+	fmt.Fprintln(out, "Предмет: Proiectarea Sistemelor Informaționale")
+	fmt.Fprintln(out, "Для выхода нажмите ESC.")
 	for {
 		lastName, err := console.readNonempty("Last name: ")
-		if finishOnInputError(err) {
+		if finishOnInputError(err, errOut) {
 			return
 		}
 		firstName, err := console.readNonempty("First name: ")
-		if finishOnInputError(err) {
+		if finishOnInputError(err, errOut) {
 			return
 		}
 
 		number, err := randomTicket()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "Не удалось сгенерировать билет:", err)
+			fmt.Fprintln(errOut, "Не удалось сгенерировать билет:", err)
 			return
 		}
-		fmt.Fprintf(os.Stdout, "Билет № %d.\nВопрос: %s\n", number, questions[number-1])
+		fmt.Fprintf(out, "Билет № %d.\nВопрос: %s\n", number, questions[number-1])
 		for {
 			err = appendJournal(*file, lastName, firstName, number)
 			if err == nil {
-				fmt.Fprintf(os.Stdout, "Запись сохранена в %s.\n", *file)
+				fmt.Fprintf(out, "Запись сохранена в %s.\n", *file)
 				break
 			}
-			fmt.Fprintf(os.Stderr, "Не удалось записать %s: %v\nЗакройте файл в Excel и проверьте права записи. Enter — повторить, ESC — выйти.\n", *file, err)
+			fmt.Fprintf(errOut, "Не удалось записать %s: %v\nЗакройте файл в Excel и проверьте права записи. Enter — повторить, ESC — выйти.\n", *file, err)
 			if err = console.waitRetry(); err != nil {
 				return
 			}
@@ -73,12 +81,12 @@ func main() {
 	}
 }
 
-func finishOnInputError(err error) bool {
+func finishOnInputError(err error, errOut io.Writer) bool {
 	if err == nil {
 		return false
 	}
 	if !errors.Is(err, errExit) && !errors.Is(err, io.EOF) {
-		fmt.Fprintln(os.Stderr, "Ошибка ввода:", err)
+		fmt.Fprintln(errOut, "Ошибка ввода:", err)
 	}
 	return true
 }
@@ -92,40 +100,54 @@ func randomTicket() (int, error) {
 }
 
 type console struct {
-	in      *bufio.Reader
-	out     io.Writer
-	stdin   *os.File
-	sttyOld string
-	mu      sync.Once
+	in       *bufio.Reader
+	out      io.Writer
+	stdin    *os.File
+	rawState *term.State
+	raw      bool
+	mu       sync.Once
 }
 
 func newConsole(stdin *os.File, out io.Writer) (*console, error) {
 	c := &console{in: bufio.NewReader(stdin), out: out, stdin: stdin}
-	old := exec.Command("stty", "-g")
-	old.Stdin = stdin
-	state, err := old.Output()
-	if err != nil {
+	fd := int(stdin.Fd())
+	if !term.IsTerminal(fd) {
 		// A pipe has no terminal settings. It still supports line-based tests.
 		return c, nil
 	}
-	c.sttyOld = strings.TrimSpace(string(state))
-	raw := exec.Command("stty", "-echo", "-icanon", "min", "1", "time", "0")
-	raw.Stdin = stdin
-	if err := raw.Run(); err != nil {
+	state, err := term.MakeRaw(fd)
+	if err != nil {
 		return nil, err
+	}
+	c.rawState = state
+	c.raw = true
+	if runtime.GOOS != "windows" {
+		c.out = crlfWriter{out}
 	}
 	return c, nil
 }
 
 func (c *console) close() {
 	c.mu.Do(func() {
-		if c.sttyOld == "" {
+		if c.rawState == nil {
 			return
 		}
-		cmd := exec.Command("stty", c.sttyOld)
-		cmd.Stdin = c.stdin
-		_ = cmd.Run()
+		_ = term.Restore(int(c.stdin.Fd()), c.rawState)
 	})
+}
+
+type crlfWriter struct{ io.Writer }
+
+func (w crlfWriter) Write(p []byte) (int, error) {
+	converted := bytes.ReplaceAll(p, []byte("\n"), []byte("\r\n"))
+	n, err := w.Writer.Write(converted)
+	if err != nil {
+		return 0, err
+	}
+	if n != len(converted) {
+		return 0, io.ErrShortWrite
+	}
+	return len(p), nil
 }
 
 func (c *console) readNonempty(prompt string) (string, error) {
@@ -153,14 +175,14 @@ func (c *console) readNonempty(prompt string) (string, error) {
 			case '\b', 127:
 				if len(input) > 0 {
 					input = input[:len(input)-1]
-					if c.sttyOld != "" {
+					if c.raw {
 						fmt.Fprint(c.out, "\b \b")
 					}
 				}
 			default:
 				if r >= ' ' && r != utf8.RuneError {
 					input = append(input, r)
-					if c.sttyOld != "" {
+					if c.raw {
 						fmt.Fprint(c.out, string(r))
 					}
 				}
