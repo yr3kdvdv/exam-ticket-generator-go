@@ -9,8 +9,8 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/yr3kdvdv/exam-ticket-generator-go/internal/lab2"
@@ -29,8 +29,9 @@ func fileDirectory() string {
 
 func main() {
 	a := app.New()
+	a.Settings().SetTheme(&academicTheme{})
 	mainWindow := a.NewWindow("Генератор билетов — Лаб 2")
-	mainWindow.Resize(fyne.NewSize(620, 380))
+	mainWindow.Resize(fyne.NewSize(760, 675))
 	base := fileDirectory()
 	groups, studentsErr := lab2.LoadStudents(filepath.Join(base, "students.xlsx"))
 	tickets, warnings, ticketsErr := lab2.LoadTickets(filepath.Join(base, "tickets.docx"))
@@ -43,8 +44,9 @@ func main() {
 	studentSelect := widget.NewSelect(nil, nil)
 	studentSelect.PlaceHolder = "Выберите студента"
 	studentSelect.Disable()
-	generate := widget.NewButton("Сгенерировать билет", nil)
+	generate := widget.NewButtonWithIcon("Сгенерировать билет", theme.NavigateNextIcon(), nil)
 	generate.Importance = widget.HighImportance
+	generate.IconPlacement = widget.ButtonIconTrailingText
 	generate.Disable()
 	updateButton := func() {
 		if groupSelect.Selected != "" && studentSelect.Selected != "" && studentsErr == nil && ticketsErr == nil {
@@ -69,7 +71,7 @@ func main() {
 	}
 	studentSelect.OnChanged = func(string) { updateButton() }
 
-	status := widget.NewLabel("Выберите группу и студента. Результат сохраняется в results.xlsx.")
+	status := widget.NewLabel(fmt.Sprintf("%d билетов загружено  ·  запись в results.xlsx", len(tickets)))
 	status.Wrapping = fyne.TextWrapWord
 	if studentsErr != nil {
 		status.SetText(fmt.Sprintf("Ошибка: %v", studentsErr))
@@ -84,20 +86,8 @@ func main() {
 	showResult := func(result lab2.Result) {
 		ticket := tickets[result.TicketNumber]
 		resultWindow := a.NewWindow(fmt.Sprintf("Ваш билет № %d", result.TicketNumber))
-		resultWindow.Resize(fyne.NewSize(690, 420))
-		content := container.NewVBox(
-			widget.NewLabelWithStyle(fmt.Sprintf("Ваш билет № %d", result.TicketNumber), fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-			widget.NewLabel("1. "+ticket.Questions[0]),
-			widget.NewLabel("2. "+ticket.Questions[1]),
-			widget.NewLabel("3. "+ticket.Questions[2]),
-			widget.NewLabel("Нажмите ESC, чтобы вернуться к выбору студента."),
-		)
-		for _, object := range content.Objects {
-			if label, ok := object.(*widget.Label); ok {
-				label.Wrapping = fyne.TextWrapWord
-			}
-		}
-		resultWindow.SetContent(container.NewScroll(container.NewPadded(content)))
+		resultWindow.Resize(fyne.NewSize(650, 690))
+		resultWindow.SetContent(resultView(result, ticket, resultWindow.Close))
 		resultWindow.Canvas().SetOnTypedKey(func(key *fyne.KeyEvent) {
 			if key.Name == fyne.KeyEscape {
 				resultWindow.Close()
@@ -137,13 +127,6 @@ func main() {
 		save()
 	}
 
-	mainWindow.SetContent(container.NewPadded(container.NewVBox(
-		widget.NewLabelWithStyle("Генератор экзаменационных билетов", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		widget.NewLabel("Proiectarea Sistemelor Informaționale"),
-		widget.NewSeparator(),
-		widget.NewLabel("Группа"), groupSelect,
-		widget.NewLabel("Студент"), studentSelect,
-		generate, status,
-	)))
+	mainWindow.SetContent(selectionView(groupSelect, studentSelect, generate, status))
 	mainWindow.ShowAndRun()
 }
