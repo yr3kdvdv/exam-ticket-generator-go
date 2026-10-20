@@ -13,7 +13,7 @@ jobs:
         with:
           go-version-file: go.mod
       - name: GUI build dependencies
-        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev xorg-dev
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
       - name: Format
         run: test -z "$(gofmt -l .)"
       - name: Test

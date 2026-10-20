@@ -97,7 +97,7 @@ func main() {
 				label.Wrapping = fyne.TextWrapWord
 			}
 		}
-		resultWindow.SetContent(container.NewPadded(content))
+		resultWindow.SetContent(container.NewScroll(container.NewPadded(content)))
 		resultWindow.Canvas().SetOnTypedKey(func(key *fyne.KeyEvent) {
 			if key.Name == fyne.KeyEscape {
 				resultWindow.Close()
