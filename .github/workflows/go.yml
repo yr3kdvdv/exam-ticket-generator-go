@@ -6,19 +6,46 @@ on:
 
 jobs:
   test:
-    strategy:
-      matrix:
-        os: [ubuntu-24.04, windows-2025]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0
         with:
           go-version-file: go.mod
+      - name: GUI build dependencies
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev xorg-dev
       - name: Format
-        if: runner.os == 'Linux'
         run: test -z "$(gofmt -l .)"
       - name: Test
         run: go test ./...
       - name: Vet
         run: go vet ./...
+
+  test-windows-core:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Test Lab 1 and Lab 2 core
+        run: go test . ./internal/lab2
+
+  build-windows-gui:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Install MinGW
+        run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64
+      - name: Build Windows GUI
+        run: |
+          mkdir -p dist/lab2-windows-amd64
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc go build -ldflags="-H windowsgui" -o dist/lab2-windows-amd64/ticket-generator-gui.exe ./cmd/lab2
+          cp students.xlsx tickets.docx dist/lab2-windows-amd64/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lab2-windows-amd64
+          path: dist/lab2-windows-amd64/
