@@ -1,4 +1,7 @@
 journal.xlsx
+results.xlsx
 ~$*.xlsx
 .journal-*.xlsx
+.results-*.xlsx
+*.inspect.ndjson
 .DS_Store
