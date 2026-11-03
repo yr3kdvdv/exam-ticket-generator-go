@@ -10,20 +10,23 @@ import (
 var palette = struct {
 	navy, ink, muted, blue, paper, white, softBlue, field, line, green color.NRGBA
 }{
-	navy:     color.NRGBA{R: 0x14, G: 0x2d, B: 0x4b, A: 0xff},
-	ink:      color.NRGBA{R: 0x17, G: 0x2b, B: 0x43, A: 0xff},
-	muted:    color.NRGBA{R: 0x69, G: 0x7b, B: 0x91, A: 0xff},
-	blue:     color.NRGBA{R: 0x25, G: 0x63, B: 0xeb, A: 0xff},
-	paper:    color.NRGBA{R: 0xea, G: 0xf0, B: 0xf7, A: 0xff},
-	white:    color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-	softBlue: color.NRGBA{R: 0xe7, G: 0xf1, B: 0xff, A: 0xff},
-	field:    color.NRGBA{R: 0xf8, G: 0xfa, B: 0xfc, A: 0xff},
-	line:     color.NRGBA{R: 0xdc, G: 0xe4, B: 0xed, A: 0xff},
-	green:    color.NRGBA{R: 0x16, G: 0x82, B: 0x65, A: 0xff},
+	navy:     rgb(0x202C46),
+	ink:      rgb(0xF0F4FF),
+	muted:    rgb(0xB0BED5),
+	blue:     rgb(0x315BCB),
+	paper:    rgb(0x0D1424),
+	white:    rgb(0x151F33),
+	softBlue: rgb(0x263958),
+	field:    rgb(0x1D2A41),
+	line:     rgb(0x394C6A),
+	green:    rgb(0x7CE6BC),
 }
 
-// academicTheme keeps Fyne controls native while giving both windows the
-// chosen light palette, including on machines configured for dark mode.
+func rgb(hex uint32) color.NRGBA {
+	return color.NRGBA{R: uint8(hex >> 16), G: uint8(hex >> 8), B: uint8(hex), A: 255}
+}
+
+// academicTheme applies the dark palette regardless of system settings.
 type academicTheme struct{}
 
 var _ fyne.Theme = (*academicTheme)(nil)
@@ -37,7 +40,7 @@ func (*academicTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color
 	case theme.ColorNamePrimary:
 		return palette.blue
 	case theme.ColorNameForegroundOnPrimary:
-		return palette.white
+		return palette.ink
 	case theme.ColorNameInputBackground:
 		return palette.field
 	case theme.ColorNameButton:
@@ -49,7 +52,7 @@ func (*academicTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color
 	case theme.ColorNameSuccess:
 		return palette.green
 	default:
-		return theme.DefaultTheme().Color(name, theme.VariantLight)
+		return theme.DefaultTheme().Color(name, theme.VariantDark)
 	}
 }
 

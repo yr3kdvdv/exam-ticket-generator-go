@@ -65,7 +65,7 @@ func appHeader() fyne.CanvasObject {
 	icon := widget.NewIcon(theme.DocumentIcon())
 	iconBox := container.NewStack(iconBackground, inset(icon, 9, 9, 9, 9))
 	titles := container.NewVBox(
-		headline("Генератор билетов", 23, palette.white, true),
+		headline("Генератор билетов", 23, palette.ink, true),
 		headline("Proiectarea Sistemelor Informaționale", 13, color.NRGBA{R: 0xc9, G: 0xd8, B: 0xea, A: 0xff}, false),
 	)
 	row := container.NewHBox(iconBox, gap(11, 0), titles, layout.NewSpacer())
@@ -76,7 +76,7 @@ func step(number, title, subtitle string, active bool) fyne.CanvasObject {
 	bg := color.Color(palette.softBlue)
 	fg := color.Color(palette.muted)
 	if active {
-		bg = color.NRGBA{R: 0xdd, G: 0xf1, B: 0xea, A: 0xff}
+		bg = color.NRGBA{R: 0x20, G: 0x43, B: 0x40, A: 0xff}
 		fg = palette.green
 	}
 	numberBox := pill(number, 35, bg, fg)
@@ -96,25 +96,25 @@ func field(label string, selectWidget *widget.Select) fyne.CanvasObject {
 }
 
 func selectionView(group, student *widget.Select, generate *widget.Button, status *widget.Label) fyne.CanvasObject {
-	statusBackground := rounded(color.NRGBA{R: 0xf1, G: 0xf6, B: 0xfb, A: 0xff}, 10)
-	statusDot := canvas.NewCircle(color.NRGBA{R: 0x20, G: 0xa7, B: 0x7a, A: 0xff})
+	statusBackground := rounded(color.NRGBA{R: 0x1d, G: 0x2a, B: 0x41, A: 0xff}, 10)
+	statusDot := canvas.NewCircle(palette.muted)
 	statusIcon := container.NewCenter(container.NewGridWrap(fyne.NewSize(8, 8), statusDot))
-	statusRow := container.NewHBox(statusIcon, gap(7, 0), status)
+	statusRow := container.NewBorder(nil, nil, statusIcon, nil, status)
 	statusStrip := container.NewStack(statusBackground, inset(statusRow, 6, 6, 10, 10))
 
 	buttonHeight := gap(0, 55)
 	button := container.NewStack(buttonHeight, generate)
 	form := container.NewVBox(
-		container.NewHBox(pill("ЛАБОРАТОРНАЯ 2", 178, palette.softBlue, color.NRGBA{R: 0x23, G: 0x59, B: 0xac, A: 0xff}), layout.NewSpacer()),
+		container.NewHBox(pill("ЛАБОРАТОРНАЯ 2", 178, palette.softBlue, color.NRGBA{R: 0xad, G: 0xc7, B: 0xff, A: 0xff}), layout.NewSpacer()),
 		gap(0, 12),
 		headline("Выдача билета", 29, palette.ink, true),
-		headline("Выберите студента, чтобы открыть билет.", 16, palette.muted, false),
+		headline("Выберите группу, затем студента.", 16, palette.muted, false),
 		gap(0, 13),
 		widget.NewSeparator(),
 		gap(0, 11),
 		container.NewGridWithColumns(2,
 			step("1", "Студент", "Группа и имя", true),
-			step("2", "Билет", "Три вопроса", false),
+			step("2", "Билет", "Сохранение в Excel", false),
 		),
 		gap(0, 17),
 		container.NewGridWithColumns(2,
@@ -134,7 +134,7 @@ func questionCard(number int, question string) fyne.CanvasObject {
 	bg.StrokeColor = palette.line
 	bg.StrokeWidth = 1
 	bg.SetMinSize(fyne.NewSize(0, 72))
-	numberChip := pill(fmt.Sprint(number), 34, color.NRGBA{R: 0xdf, G: 0xec, B: 0xfc, A: 0xff}, color.NRGBA{R: 0x23, G: 0x59, B: 0xac, A: 0xff})
+	numberChip := pill(fmt.Sprint(number), 34, color.NRGBA{R: 0x26, G: 0x39, B: 0x58, A: 0xff}, color.NRGBA{R: 0xad, G: 0xc7, B: 0xff, A: 0xff})
 	q := widget.NewLabel(question)
 	q.Wrapping = fyne.TextWrapWord
 	content := container.NewBorder(nil, nil, numberChip, nil, q)
@@ -153,7 +153,7 @@ func resultView(result lab2.Result, ticket lab2.Ticket, back func()) fyne.Canvas
 		backButton,
 	)
 	questions := container.NewVBox(
-		container.NewHBox(pill(badge, 185, color.NRGBA{R: 0xe1, G: 0xf4, B: 0xed, A: 0xff}, palette.green), layout.NewSpacer()),
+		container.NewHBox(pill(badge, 185, color.NRGBA{R: 0x20, G: 0x43, B: 0x40, A: 0xff}, palette.green), layout.NewSpacer()),
 		gap(0, 8),
 		headline(fmt.Sprintf("Ваш билет № %02d", result.TicketNumber), 30, palette.ink, true),
 		headline(result.Student.Label()+"   ·   "+result.Group, 16, palette.muted, false),

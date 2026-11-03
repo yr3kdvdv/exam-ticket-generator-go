@@ -4,6 +4,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -84,4 +85,51 @@ func TestViewsRender(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIssueTicketAndReturn(t *testing.T) {
+	a := test.NewApp()
+	defer a.Quit()
+	dir := t.TempDir()
+	for _, name := range []string{"students.xlsx", "tickets.docx"} {
+		data, err := os.ReadFile(filepath.Join("..", "..", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, name), data, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	window, group, student, generate := buildSelectionWindow(a, dir)
+	defer window.Close()
+	window.Show()
+	if !student.Disabled() || !generate.Disabled() {
+		t.Fatal("student and issue controls must start disabled")
+	}
+	group.SetSelected(group.Options[0])
+	student.SetSelected(student.Options[0])
+	group.SetSelected(group.Options[1])
+	if student.Selected != "" || !generate.Disabled() {
+		t.Fatal("changing the group must clear the student and disable issuance")
+	}
+	student.SetSelected(student.Options[0])
+	if generate.Disabled() {
+		t.Fatal("valid selection did not enable issuance")
+	}
+	test.Tap(generate)
+	if _, err := os.Stat(filepath.Join(dir, "results.xlsx")); err != nil {
+		t.Fatal(err)
+	}
+	for _, ticket := range a.Driver().AllWindows() {
+		if strings.HasPrefix(ticket.Title(), "Ваш билет №") {
+			ticket.Canvas().OnTypedKey()(&fyne.KeyEvent{Name: fyne.KeyEscape})
+			for _, open := range a.Driver().AllWindows() {
+				if open == ticket {
+					t.Fatal("Escape did not close the ticket")
+				}
+			}
+			return
+		}
+	}
+	t.Fatal("issuing the ticket did not open its window")
 }

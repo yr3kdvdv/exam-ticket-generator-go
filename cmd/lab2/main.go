@@ -30,9 +30,13 @@ func fileDirectory() string {
 func main() {
 	a := app.New()
 	a.Settings().SetTheme(&academicTheme{})
+	window, _, _, _ := buildSelectionWindow(a, fileDirectory())
+	window.ShowAndRun()
+}
+
+func buildSelectionWindow(a fyne.App, base string) (fyne.Window, *widget.Select, *widget.Select, *widget.Button) {
 	mainWindow := a.NewWindow("Генератор билетов — Лаб 2")
 	mainWindow.Resize(fyne.NewSize(760, 675))
-	base := fileDirectory()
 	groups, studentsErr := lab2.LoadStudents(filepath.Join(base, "students.xlsx"))
 	tickets, warnings, ticketsErr := lab2.LoadTickets(filepath.Join(base, "tickets.docx"))
 	for _, warning := range warnings {
@@ -79,7 +83,7 @@ func main() {
 	if ticketsErr != nil {
 		status.SetText(fmt.Sprintf("Ошибка: %v", ticketsErr))
 	}
-	if len(warnings) > 0 && ticketsErr == nil {
+	if len(warnings) > 0 && ticketsErr == nil && studentsErr == nil {
 		status.SetText(fmt.Sprintf("Загружено билетов: %d. Пропущено блоков: %d. Подробности в журнале приложения.", len(tickets), len(warnings)))
 	}
 
@@ -128,5 +132,5 @@ func main() {
 	}
 
 	mainWindow.SetContent(selectionView(groupSelect, studentSelect, generate, status))
-	mainWindow.ShowAndRun()
+	return mainWindow, groupSelect, studentSelect, generate
 }
